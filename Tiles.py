@@ -1,18 +1,17 @@
+from sys import setprofile
+
+
 class Tile:
     def __init__(self, char, passable=True, terminal_on_enter=False, step_penalty=0, step_reward=0):
         self.char = char
         self.passable = passable
         self.terminal_on_enter = terminal_on_enter
         self.step_penalty = step_penalty
-        self.step_reward
+        self.step_reward = step_reward
     
     @property
     def name(self):
         return self.__class__.__name__
-    
-    @property
-    def char(self):
-        return self.char
     
 class Empty(Tile):
     def __init__(self):
@@ -39,10 +38,10 @@ class Start(Tile):
         super().__init__(char="S")
 
 CHARS_FOR_MAP = {
-    Empty.car : Empty,
-    Wall.char : Wall,
-    Hole.char : Hole,
-    Lava.char : Lava,
-    Diamond.char : Diamond,
-    Start.char : Start
+    "." : Empty(),
+    "|" : Wall(),
+    "o" : Hole(),
+    "~" : Lava(),
+    "D" : Diamond(),
+    "S" : Start()
 }

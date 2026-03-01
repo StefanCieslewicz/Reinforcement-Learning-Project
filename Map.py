@@ -20,7 +20,7 @@ class Map:
     
     @staticmethod
     def get_map():
-        map = [
+        lines = [
           "...|.......o",
           "..o|o.|.~D..",
           "..||..|.....",
@@ -39,7 +39,7 @@ class Map:
         start_pos = None
         diamond_pos = None
 
-        for y, row in enumerate(map):
+        for y, row in enumerate(lines):
             grid_row = []
             for x, char in enumerate(row):
                 current_tile_object = CHARS_FOR_MAP[char]
