@@ -144,8 +144,8 @@ class FakeMinecraft(gym.Env):
         agent_row, agent_col = self._agent_location
 
         # --- draw tiles ---
-        for row in range(self.size):
-            for column in range(self.size):
+        for row in range(self.SIZE):
+            for column in range(self.SIZE):
                 tile = int(self.grid[row, column])
                 color = self.COLORS.get(tile, (255, 0, 255))  # magenta = unknown
                 x = 20 + column * 52
