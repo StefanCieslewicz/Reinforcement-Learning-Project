@@ -6,6 +6,7 @@ import pygame
 import gymnasium as gym
 from gymnasium import spaces
 
+<<<<<<< HEAD
 from gymnasium.envs.registration import register
 
 register(
@@ -14,6 +15,8 @@ register(
     max_episode_steps=300,
 )
 
+=======
+>>>>>>> ab6afc0 (Co-authored-by: StefanCieslewicz <StefanCieslewicz@users.noreply.github.com>)
 class Actions(Enum):
     RIGHT = 0
     UP = 1
@@ -27,9 +30,13 @@ class FakeMinecraftEnv(gym.Env):
         self.size = size # size of the grid world
         self.window_size = 512 # size of the pygame window
 
-        self.observation_space = spaces.Box(0, size - 1, shape=(2,), dtype=int)
-        
-        self._agent_location = np.array([-1, -1], dtype=int)
+        self.observation_space = spaces.Dict(
+            {
+                "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+            }
+        )
+        self.agent_location = np.array([-1, -1], dtype=int)
         self._target_location = np.array([-1, -1], dtype=int)
         
         self.walls = [
@@ -60,7 +67,7 @@ class FakeMinecraftEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        return self._agent_location.copy()
+        return self.agent_location.copy()
 
     def reset(self, seed=None, options=None):
 
@@ -81,7 +88,118 @@ class FakeMinecraftEnv(gym.Env):
     def step(self, action):
         # map direction to action
         direction = self._action_to_direction[action]
+        # np.clip keeps agent's loc in the boundary of the grid
+        new_location = np.clip(self._agent_location + direction, 0, self.SIZE - 1)
+        
+        # wall check
+        if self.grid[new_location[0], new_location[1]] != self.WALL:
+            self._agent_location = new_location
+        
+        if self.grid[new_location[0], new_location[1]] == self.HOLE:
+            return -2, False
+        
+        if self.grid[new_location[0], new_location[1]] == self.LAVA:
+            return -100, True
 
+        if self.grid[new_location[0], new_location[1]] == self.DIAMOND:
+            return 100, True
+        
+        return -1, False
+        
+    
+    def render_Stefan(self, screen: pygame.Surface | None = None):
+        """
+        Render a 12x12 numpy grid with 5 tile types and an agent marker.
+
+        Parameters
+        ----------
+        grid       : np.ndarray of shape (12, 12) with values 0-4
+        agent_pos  : (row, col) tuple – can be outside the grid
+        screen     : existing pygame.Surface to draw on; a new one is created if None
+        show_labels: draw single-character tile labels on each cell
+
+        Returns
+        -------
+        pygame.Surface with the rendered scene
+        """
+
+        total_w = 20 * 2 + 12 * 52 + 180
+        total_h = 20 * 2 + 12 * 52
+
+        if screen is None:
+            screen = pygame.Surface((total_w, total_h))
+
+        screen.fill((30, 30, 30))
+
+        font_info  = pygame.font.SysFont("monospace", 14)
+
+        agent_row, agent_col = self._agent_location
+
+        # --- draw tiles ---
+        for row in range(self.SIZE):
+            for column in range(self.SIZE):
+                tile = int(self.grid[row, column])
+                color = self.COLORS.get(tile, (255, 0, 255))  # magenta = unknown
+                x = 20 + column * 52
+                y = 20 + row * 52
+                rect = pygame.Rect(x, y, 52, 52)
+                pygame.draw.rect(screen, color, rect)
+                pygame.draw.rect(screen, (20, 20, 20), rect, 1)  # grid line
+
+        # --- draw agent on grid (if inside bounds) ---
+        cx = 20 + agent_col * 52 + 52 // 2
+        cy = 20 + agent_row * 52 + 25 // 2
+        radius = int(52 * 0.3)
+        pygame.draw.circle(screen, (180, 140, 0), (cx, cy), radius + 2)
+        pygame.draw.circle(screen, (255, 220, 0),   (cx, cy), radius)
+
+        # --- info panel ---
+        #    panel_x = 20 * 2 + self.size**2
+        #    panel_y = 20
+
+        #   pygame.draw.rect(screen, (45, 45, 45),
+        #                      pygame.Rect(panel_x - 8, 0, 180 + 16, total_h))
+
+        lines = [
+            "LEGEND",
+            "",
+            "E  Empty",
+            "W  Wall",
+            "~  Water",
+            "G  Grass",
+            "L  Lava",
+            "",
+            "Agent (●)",
+            "",
+            "AGENT POS",
+            f"row: {agent_row}",
+            f"col: {agent_col}",
+        ]
+
+        colors_map = [
+            (220, 220, 220), (0, 0, 0),
+            self.COLORS[0], self.COLORS[self.WALL],
+            self.COLORS[self.HOLE], self.COLORS[self.DIAMOND],
+            self.COLORS[self.LAVA],
+            (0, 0, 0),
+            (255, 220, 0), (0, 0, 0),
+            (220, 220, 220), (180, 220, 255), (180, 220, 255),
+            (140, 255, 140),
+        ]
+
+        for i, (line, col) in enumerate(zip(lines, colors_map)):
+            surf = font_info.render(line, True, col)
+            #screen.blit(surf, (panel_x + 4, panel_y + i * 20))
+
+        return screen
+
+        
+    def _get_obs(self):
+        return {"agent": self._agent_location}
+
+    def step_legacy(self, action):
+        # Map the action (element of {0,1,2,3}) to the direction we walk in
+        direction = self._action_to_direction[action]
         # We use `np.clip` to make sure we don't leave the grid
         new_position = np.clip(
             self._agent_location + direction, 0, self.size - 1
