@@ -23,12 +23,12 @@ class FakeMinecraft(gym.Env):
     EMPTY = 0
     AGENT   = 1
     LAVA    = -100
-    HOLE    = -2
+    HOLE    = -10
     DIAMOND = 100
     WALL    = 2
     
     
-    _START_POS   = np.array([11,  0], dtype=int)   # bottom-left
+    _START_POS   = np.array([1,  11], dtype=int)   # bottom-left
 
     SIZE = 12
     CELL = 52 
@@ -62,6 +62,7 @@ class FakeMinecraft(gym.Env):
         self.grid = self._base_grid.copy()
         self._agent_location: np.ndarray = self._START_POS.copy()
         
+        self.reward = 0
         
     def _build_grid(self):
         grid = np.zeros((self.SIZE, self.SIZE), dtype=int)
@@ -102,6 +103,10 @@ class FakeMinecraft(gym.Env):
         return
     
     def step(self, action):
+        """
+        
+        returns: {reward:int, termination: bool}
+        """
         direction = self._action_to_direction[action]
         # np.clip keeps agent's loc in the boundary of the grid
         new_location = np.clip(self._agent_location + direction, 0, self.SIZE - 1)
@@ -110,9 +115,16 @@ class FakeMinecraft(gym.Env):
         if self.grid[new_location[0], new_location[1]] != self.WALL:
             self._agent_location = new_location
         
-        return 
-    
-        # we can terminate and add reward in this func?!
+        if self.grid[new_location[0], new_location[1]] == self.HOLE:
+            return -2, False
+        
+        if self.grid[new_location[0], new_location[1]] == self.LAVA:
+            return -100, True
+
+        if self.grid[new_location[0], new_location[1]] == self.DIAMOND:
+            return 100, True
+        
+        return -1, False
         
     
     def render_Stefan(self, screen: pygame.Surface | None = None):
