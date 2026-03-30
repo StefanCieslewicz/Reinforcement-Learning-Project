@@ -37,7 +37,7 @@ class FakeMinecraftEnv(gym.Env):
                         np.array([4, 5]), np.array([4, 6]), np.array([4, 7]),
                         np.array([3, 6]), np.array([2, 6]), np.array([1, 6]),
                         np.array([6, 8]), np.array([6, 9]), np.array([6, 10]), np.array([6, 11])
-                      ]
+                    ]
         self.holes = [
                 np.array([8, 1]), np.array([6, 0]), np.array([1, 2]), np.array([1, 4]), np.array([0, 11]), np.array([5, 9]), np.array([7, 6]), np.array([9, 9]), np.array([11, 7])
             ]
@@ -95,20 +95,20 @@ class FakeMinecraftEnv(gym.Env):
 
         # An episode is done iff the agent has reached the target
         terminated = False
-        reward = 0
+        reward = -1
 
         # Check lava (highest priority)
         if any(np.array_equal(self._agent_location, lava) for lava in self.lava):
-            reward = -100
+            reward = -99
             terminated = True
 
         # Check holes
         elif any(np.array_equal(self._agent_location, hole) for hole in self.holes):
-            reward = -10
+            reward = -9
 
         # Check goal
         elif np.array_equal(self._agent_location, self._target_location):
-            reward = 100
+            reward = 101
             terminated = True
 
         observation = self._get_obs()
