@@ -6,6 +6,13 @@ import pygame
 import gymnasium as gym
 from gymnasium import spaces
 
+from gymnasium.envs.registration import register
+
+register(
+    id="FakeMinecraft-v1",
+    entry_point="env:FakeMinecraftEnv",
+)
+
 class Actions(Enum):
     RIGHT = 0
     UP = 1
@@ -19,13 +26,9 @@ class FakeMinecraftEnv(gym.Env):
         self.size = size # size of the grid world
         self.window_size = 512 # size of the pygame window
 
-        self.observation_space = spaces.Dict(
-            {
-                "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-            }
-        )
-        self.agent_location = np.array([-1, -1], dtype=int)
+        self.observation_space = spaces.Box(0, size - 1, shape=(2,), dtype=int)
+        
+        self._agent_location = np.array([-1, -1], dtype=int)
         self._target_location = np.array([-1, -1], dtype=int)
         
         self.walls = [
@@ -56,7 +59,7 @@ class FakeMinecraftEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        return self.agent_location.copy()
+        return self._agent_location.copy()
 
     def reset(self, seed=None, options=None):
 
