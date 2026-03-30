@@ -99,16 +99,16 @@ class FakeMinecraftEnv(gym.Env):
 
         # Check lava (highest priority)
         if any(np.array_equal(self._agent_location, lava) for lava in self.lava):
-            reward = -99
+            reward = -100
             terminated = True
 
         # Check holes
         elif any(np.array_equal(self._agent_location, hole) for hole in self.holes):
-            reward = -9
+            reward = -10
 
         # Check goal
         elif np.array_equal(self._agent_location, self._target_location):
-            reward = 101
+            reward = 100
             terminated = True
 
         observation = self._get_obs()
