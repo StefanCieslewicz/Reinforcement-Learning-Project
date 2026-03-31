@@ -38,7 +38,7 @@ class FakeMinecraftEnv(gym.Env):
                         np.array([4, 5]), np.array([4, 6]), np.array([4, 7]),
                         np.array([3, 6]), np.array([2, 6]), np.array([1, 6]),
                         np.array([6, 8]), np.array([6, 9]), np.array([6, 10]), np.array([6, 11])
-                      ]
+                    ]
         self.holes = [
                 np.array([8, 1]), np.array([6, 0]), np.array([1, 2]), np.array([1, 4]), np.array([0, 11]), np.array([5, 9]), np.array([7, 6]), np.array([9, 9]), np.array([11, 7])
             ]
