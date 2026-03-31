@@ -11,6 +11,7 @@ from gymnasium.envs.registration import register
 register(
     id="FakeMinecraft-v1",
     entry_point="env:FakeMinecraftEnv",
+    max_episode_steps=300,
 )
 
 class Actions(Enum):
@@ -95,16 +96,16 @@ class FakeMinecraftEnv(gym.Env):
 
         # An episode is done iff the agent has reached the target
         terminated = False
-        reward = -1
+        reward = -0.05
 
         # Check lava (highest priority)
         if any(np.array_equal(self._agent_location, lava) for lava in self.lava):
-            reward = -100
+            reward = -1
             terminated = True
 
         # Check holes
         elif any(np.array_equal(self._agent_location, hole) for hole in self.holes):
-            reward = -10
+            reward = -0.5
 
         # Check goal
         elif np.array_equal(self._agent_location, self._target_location):
@@ -211,23 +212,8 @@ class FakeMinecraftEnv(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
-        
+   
     def close(self):
         if self.window is not None:
             pygame.display.quit()
             pygame.quit()
-
-if __name__ == "__main__":
-    pygame.init()
-
-    env = FakeMinecraftEnv(render_mode="human")
-    env.reset()
-
-    # keep window open
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-    env.close()
