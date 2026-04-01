@@ -41,7 +41,7 @@ class MonteCarloAgent:
 if __name__ == "__main__":
     env = gym.make("FakeMinecraft-v1")
     agent = MonteCarloAgent(env, initial_epsilon=1.0, epsilon_decay=0.9995, final_epsilon=0.05, discount_factor=0.95)
-    num_episodes = 2000
+    num_episodes = 200
 
     for episode_idx in range(num_episodes):
         state, _ = env.reset()
@@ -64,4 +64,6 @@ if __name__ == "__main__":
         agent.update(episode)
         agent.decay_epsilon()
 
-    plot_policy.plot_policy(agent.q_values)
+
+    print(agent.q_values)
+    #plot_policy.plot_policy(agent.q_values)
