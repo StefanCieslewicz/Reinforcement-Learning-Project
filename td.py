@@ -1,41 +1,50 @@
 from env import FakeMinecraftEnv
+from collections import defaultdict
 import numpy as np
 import gymnasium as gym
 import pygame
-
-def e_greedy(Q, next_state, epsilon):
-    if np.random.random() < epsilon:
-        return np.random.randint(4)    
-    return int(np.argmax(Q[next_state]))
+import plot_policy
 
 
-
-def sarsa(env, alpha: float = 0.1, epsilon: float = 1.0, n_episodes:int = 1, gamma: float = 0.8):
-    Q = np.zeros((12*12, 4))
-    rewards_per_episode = []
-    
-    for episode in range(n_episodes):
-        state, _ = env.reset()
-        state = state[0]*12 + state[1]
-        action = e_greedy(Q, state, epsilon)
+class TemporalDifferenceAgent():
+    def __init__(self, env: gym.Env, initial_epsilon:float =0.98, epsilon_decay:float = 0.9, final_epsilon:float = 0.01 , gamma:float =0.95, alpha:float =0.1):
+        self.env = env
+        self.Q = defaultdict(lambda: np.zeros(env.action_space.n))
         
-
-        total_reward = 0
-        terminated = False 
+        self.epsilon = initial_epsilon
+        self.epsilon_decay = epsilon_decay
+        self.final_epsilon = final_epsilon
+        self.alpha = alpha
+        self.gamma = gamma
         
-        while not terminated:
-            
-            next_state, reward, terminated, _, _ = env.step(action)
-            
-            next_state = next_state[0]*12 + next_state[1]
-            next_action = e_greedy(Q, next_state, epsilon)
-            
-            
-            
-            td_target = reward + gamma * Q[next_state, next_action] * (not terminated)
-            td_error = td_target - Q[state, action]
+    def e_greedy(self, next_state):
+        if np.random.random() < self.epsilon:
+            return np.random.randint(4)    
+        return np.argmax(self.Q[next_state])
 
-            Q[state, action] += alpha * td_error
+    def sarsa(self, n_episodes:int = 200):
+        
+        rewards_per_episode = []
+        
+        for episode in range(n_episodes):
+            state, _ = env.reset()
+            state = tuple(state)
+            action = self.e_greedy(state)
+            
+            total_reward = 0
+            terminated = False 
+            step = 0
+            
+            while not terminated:
+                step += 1
+                next_state, reward, terminated, _, _ = self.env.step(action)
+                next_state = tuple(next_state)
+                next_action = self.e_greedy(next_state)
+                
+                td_target = reward + self.gamma * self.Q[next_state][next_action] * (not terminated)
+                td_error = td_target - self.Q[state][action]
+
+                self.Q[state][action] += self.alpha * td_error
 
                 state = next_state
                 action = next_action
@@ -94,15 +103,12 @@ def sarsa(env, alpha: float = 0.1, epsilon: float = 1.0, n_episodes:int = 1, gam
 
 
 if __name__ == '__main__':
-    env = gym.make('FakeMinecraft-v1', render_mode="human")
+    env = gym.make('FakeMinecraft-v1') #  , render_mode="human"
     pygame.init()
     
-    print(sarsa(env))
+    agent = TemporalDifferenceAgent(env)
+    num_episodes = 200
     
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-                
-    env.close()
+    q_ = agent.q_learning(num_episodes)
+    plot_policy.plot_policy(q_)
+    
