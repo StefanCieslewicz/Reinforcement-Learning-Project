@@ -1,112 +1,114 @@
 from env import FakeMinecraftEnv
+from collections import defaultdict
 import numpy as np
 import gymnasium as gym
 import pygame
-
-def e_greedy(Q, next_state, epsilon):
-    if np.random.random() < epsilon:
-        return np.random.randint(4)    
-    return int(np.argmax(Q[next_state]))
+import plot_policy
 
 
-
-def sarsa(
-            env, 
-            alpha: float = 0.1, 
-            epsilon: float = 1.0,
-            gamma: float = 0.8, 
-            n_episodes:int = 1 
-        ):
-    
-    
-    Q = np.zeros((12*12, 4))
-    rewards_per_episode = []
-    
-    for episode in range(n_episodes):
-        state, _ = env.reset()
-        state = state[0]*12 + state[1]
-        action = e_greedy(Q, state, epsilon)
+class TemporalDifferenceAgent():
+    def __init__(self, env: gym.Env, initial_epsilon:float =0.98, epsilon_decay:float = 0.9, final_epsilon:float = 0.01 , gamma:float =0.95, alpha:float =0.1):
+        self.env = env
+        self.Q = defaultdict(lambda: np.zeros(env.action_space.n))
         
-
-        total_reward = 0
-        terminated = False 
+        self.epsilon = initial_epsilon
+        self.epsilon_decay = epsilon_decay
+        self.final_epsilon = final_epsilon
+        self.alpha = alpha
+        self.gamma = gamma
         
-        while not terminated:
-            
-            next_state, reward, terminated, _, _ = env.step(action)
-            
-            next_state = next_state[0]*12 + next_state[1]
-            next_action = e_greedy(Q, next_state, epsilon)
-            
-            
-            
-            td_target = reward + gamma * Q[next_state, next_action] * (not terminated)
-            td_error = td_target - Q[state, action]
+    def e_greedy(self, next_state):
+        if np.random.random() < self.epsilon:
+            return np.random.randint(4)    
+        return np.argmax(self.Q[next_state])
 
-            Q[state, action] += alpha * td_error
-
-            state = next_state
-            action = next_action
-            total_reward += reward
+    def sarsa(self, n_episodes:int = 200):
         
-        rewards_per_episode.append(total_reward)
+        rewards_per_episode = []
         
-        epsilon = np.maximum(0.01, epsilon-0.001)
-    
-    return Q, rewards_per_episode
-
-
-def q_learning(
-                env, 
-                alpha: float = 0.1, 
-                epsilon: float = 1.0,
-                gamma: float = 0.8, 
-                n_episodes:int = 100 
-            ):
-    
-    Q = np.zeros((12*12, 4))
-    rewards_per_episode = []
-    
-    for episode in range(n_episodes):
-        state, _ = env.reset()
-        state = state[0]*12 + state[1]        
-
-        total_reward = 0
-        terminated = False 
-        
-        while not terminated:
+        for episode in range(n_episodes):
+            state, _ = env.reset()
+            state = tuple(state)
+            action = self.e_greedy(state)
             
-            action = e_greedy(Q, state, epsilon)
+            total_reward = 0
+            terminated = False 
+            step = 0
             
-            next_state, reward, terminated, _, _ = env.step(action)
-            next_state = next_state[0]*12 + next_state[1]            
+            while not terminated:
+                step += 1
+                next_state, reward, terminated, _, _ = self.env.step(action)
+                next_state = tuple(next_state)
+                next_action = self.e_greedy(next_state)
+                
+                td_target = reward + self.gamma * self.Q[next_state][next_action] * (not terminated)
+                td_error = td_target - self.Q[state][action]
+
+                self.Q[state][action] += self.alpha * td_error
+
+                state = next_state
+                action = next_action
+                total_reward += reward
+                
+            if reward == 10:
+                print(f"Ep: {episode}; got diamond \nSteps: {step}")
             
-            td_target = reward + gamma * np.max(Q[next_state]) * (not terminated)
-            td_error = td_target - Q[state, action]
-
-            Q[state, action] += alpha * td_error
-
-            state = next_state
-            total_reward += reward
+            rewards_per_episode.append(total_reward)
+            
+            self.epsilon = np.maximum(self.final_epsilon, self.epsilon*self.epsilon_decay)
         
-        rewards_per_episode.append(total_reward)
+        return self.Q
+
+
+    def q_learning(self, n_episodes:int = 200):
         
-        epsilon = np.maximum(0.01, epsilon-0.001)
+        rewards_per_episode = []
+        
+        for episode in range(n_episodes):
+            state, _ = env.reset()
+            state = tuple(state)  
+
+            total_reward = 0
+            terminated = False 
+            step = 0
+            
+            while not terminated:
+                step += 1
+                action = self.e_greedy(state)
+                
+                next_state, reward, terminated, _, _ = env.step(action)
+                next_state = tuple(next_state)            
+                
+                td_target = reward + self.gamma * np.max(self.Q[next_state]) * (not terminated)
+                td_error = td_target - self.Q[state][action]
+
+                self.Q[state][action] += self.alpha * td_error
+
+                state = next_state
+                total_reward += reward
+            
+            if reward == 10:
+                print(f"Ep: {episode}; got diamond \nSteps: {step}")
+            
+            rewards_per_episode.append(total_reward)
+            
+            self.epsilon = np.maximum(self.final_epsilon, self.epsilon*self.epsilon_decay)
+        
+        return self.Q
     
     
-    
-    return Q, rewards_per_episode
+    def reset_q(self):
+        self.Q = defaultdict(lambda: np.zeros(env.action_space.n))
+        return
+
 
 if __name__ == '__main__':
-    env = gym.make('FakeMinecraft-v1') #  render_mode="human"
+    env = gym.make('FakeMinecraft-v1') #  , render_mode="human"
     pygame.init()
     
-    print(q_learning(env))
+    agent = TemporalDifferenceAgent(env)
+    num_episodes = 200
     
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-                
-    env.close()
+    q_ = agent.q_learning(num_episodes)
+    plot_policy.plot_policy(q_)
+    

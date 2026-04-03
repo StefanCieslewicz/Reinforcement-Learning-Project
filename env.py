@@ -21,7 +21,7 @@ class Actions(Enum):
     DOWN = 3
 
 class FakeMinecraftEnv(gym.Env):
-    metadata = {"render_modes": ["human"], "render_fps": 4}
+    metadata = {"render_modes": ["human"], "render_fps": 500}
     
     def __init__(self, render_mode=None, size=12):
         self.size = size # size of the grid world
@@ -105,11 +105,11 @@ class FakeMinecraftEnv(gym.Env):
 
         # Check holes
         elif any(np.array_equal(self._agent_location, hole) for hole in self.holes):
-            reward = -0.5
+            reward = -0.1
 
         # Check goal
         elif np.array_equal(self._agent_location, self._target_location):
-            reward = 100
+            reward = 10
             terminated = True
 
         observation = self._get_obs()
@@ -212,7 +212,7 @@ class FakeMinecraftEnv(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
-   
+
     def close(self):
         if self.window is not None:
             pygame.display.quit()
