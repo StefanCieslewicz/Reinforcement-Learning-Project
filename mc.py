@@ -34,6 +34,7 @@ class MonteCarloAgent:
                 self.returns[(state, action)].append(G)
                 self.q_values[state][action] = np.mean(self.returns[(state, action)])
                 visited.add((state, action))
+        return G
 
     def decay_epsilon(self):
         self.epsilon = max(self.final_epsilon, self.epsilon * self.epsilon_decay)
@@ -61,7 +62,7 @@ if __name__ == "__main__":
             state = next_state
             done = terminated or truncated
 
-        agent.update(episode)
+        _ = agent.update(episode)
         agent.decay_epsilon()
 
 

@@ -8,7 +8,7 @@ import plot_policy
 
 class TemporalDifferenceAgent():
     def __init__(self, env: gym.Env, initial_epsilon:float =0.98, epsilon_decay:float = 0.9, final_epsilon:float = 0.01 , gamma:float =0.95, alpha:float =0.1):
-        self.env = env
+        self.env = env.unwrapped
         self.Q = defaultdict(lambda: np.zeros(env.action_space.n))
         
         self.epsilon = initial_epsilon
@@ -25,9 +25,9 @@ class TemporalDifferenceAgent():
     def sarsa(self, n_episodes:int = 200):
         
         rewards_per_episode = []
-        
+        ep_with_diamonds = {}
         for episode in range(n_episodes):
-            state, _ = env.reset()
+            state, _ = self.env.reset()
             state = tuple(state)
             action = self.e_greedy(state)
             
@@ -51,21 +51,21 @@ class TemporalDifferenceAgent():
                 total_reward += reward
                 
             if reward == 10:
-                print(f"Ep: {episode}; got diamond \nSteps: {step}")
+                ep_with_diamonds[episode] = step
             
             rewards_per_episode.append(total_reward)
             
             self.epsilon = np.maximum(self.final_epsilon, self.epsilon*self.epsilon_decay)
         
-        return self.Q
+        return self.Q, ep_with_diamonds, rewards_per_episode
 
 
     def q_learning(self, n_episodes:int = 200):
         
         rewards_per_episode = []
-        
+        ep_with_diamonds = {}
         for episode in range(n_episodes):
-            state, _ = env.reset()
+            state, _ = self.env.reset()
             state = tuple(state)  
 
             total_reward = 0
@@ -76,7 +76,7 @@ class TemporalDifferenceAgent():
                 step += 1
                 action = self.e_greedy(state)
                 
-                next_state, reward, terminated, _, _ = env.step(action)
+                next_state, reward, terminated, _, _ = self.env.step(action)
                 next_state = tuple(next_state)            
                 
                 td_target = reward + self.gamma * np.max(self.Q[next_state]) * (not terminated)
@@ -88,27 +88,31 @@ class TemporalDifferenceAgent():
                 total_reward += reward
             
             if reward == 10:
-                print(f"Ep: {episode}; got diamond \nSteps: {step}")
+                ep_with_diamonds[episode] = step
             
             rewards_per_episode.append(total_reward)
             
             self.epsilon = np.maximum(self.final_epsilon, self.epsilon*self.epsilon_decay)
         
-        return self.Q
+        return self.Q, ep_with_diamonds, rewards_per_episode
     
     
     def reset_q(self):
         self.Q = defaultdict(lambda: np.zeros(env.action_space.n))
         return
 
-
 if __name__ == '__main__':
-    env = gym.make('FakeMinecraft-v1') #  , render_mode="human"
+    env = gym.make('FakeMinecraft-v1') #  
     pygame.init()
     
     agent = TemporalDifferenceAgent(env)
     num_episodes = 200
     
-    q_ = agent.q_learning(num_episodes)
-    plot_policy.plot_policy(q_)
+    #q_,e = agent.sarsa(num_episodes)
+    #plot_policy.plot_policy(q_)
     
+    
+    q_,e = agent.q_learning(num_episodes)
+    #plot_policy.plot_policy(q_)
+    
+    print(e)
