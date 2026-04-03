@@ -102,17 +102,17 @@ class TemporalDifferenceAgent():
         return
 
 if __name__ == '__main__':
-    env = gym.make('FakeMinecraft-v1') #  
+    env = gym.make('FakeMinecraft-v1', render_mode="human" ) #  
     pygame.init()
     
     agent = TemporalDifferenceAgent(env)
     num_episodes = 200
     
-    #q_,e = agent.sarsa(num_episodes)
+    #q_,e, _ = agent.sarsa(num_episodes)
     #plot_policy.plot_policy(q_)
     
     
-    q_,e = agent.q_learning(num_episodes)
-    #plot_policy.plot_policy(q_)
+    q_, e, _  = agent.q_learning(num_episodes)
+    plot_policy.plot_policy(q_)
     
-    print(e)
+    #print(e)
